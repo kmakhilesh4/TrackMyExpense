@@ -1,0 +1,83 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'DynamoDB table for TrackMyExpense application - Single Table Design'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Environment name
+
+Resources:
+  # Main DynamoDB Table - Single Table Design
+  TrackMyExpenseTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub 'TrackMyExpense-${Environment}'
+      BillingMode: PAY_PER_REQUEST  # On-demand pricing for cost efficiency
+      
+      # Primary Key - Meaningful attribute names
+      # PK = UserId (USER#<userId>)
+      # SK = EntityType (PROFILE | ACCOUNT#<accountId> | TRANSACTION#<date>#<transactionId> | BUDGET#<categoryId>#<period>)
+      AttributeDefinitions:
+        - AttributeName: UserId
+          AttributeType: S
+        - AttributeName: EntityType
+          AttributeType: S
+        - AttributeName: AccountId
+          AttributeType: S
+        - AttributeName: TransactionDate
+          AttributeType: S
+      
+      KeySchema:
+        - AttributeName: UserId
+          KeyType: HASH
+        - AttributeName: EntityType
+          KeyType: RANGE
+      
+      # Global Secondary Index for querying transactions by account and date
+      # GSI1PK = AccountId (ACCOUNT#<accountId>)
+      # GSI1SK = TransactionDate (TRANSACTION#<date>#<transactionId>)
+      GlobalSecondaryIndexes:
+        - IndexName: AccountTransactionsIndex
+          KeySchema:
+            - AttributeName: AccountId
+              KeyType: HASH
+            - AttributeName: TransactionDate
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      
+      # Enable Point-in-Time Recovery for data protection
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      
+      # Server-side encryption
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+      
+      # Tags
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: TrackMyExpense
+        - Key: ManagedBy
+          Value: CloudFormation
+
+Outputs:
+  TableName:
+    Description: Name of the DynamoDB table
+    Value: !Ref TrackMyExpenseTable
+    Export:
+      Name: !Sub '${AWS::StackName}-TableName'
+  
+  TableArn:
+    Description: ARN of the DynamoDB table
+    Value: !GetAtt TrackMyExpenseTable.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-TableArn'

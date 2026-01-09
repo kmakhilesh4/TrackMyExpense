@@ -1,0 +1,55 @@
+service: trackmyexpense-backend
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: ${opt:region, 'ap-south-1'}
+  stage: ${opt:stage, 'prod'}
+  memorySize: 512
+  timeout: 10
+  environment:
+    NODE_ENV: ${self:provider.stage}
+    DYNAMODB_TABLE_NAME: ${env:DYNAMODB_TABLE_NAME, 'TrackMyExpense-prod'}
+    COGNITO_USER_POOL_ID: ${env:COGNITO_USER_POOL_ID}
+    COGNITO_CLIENT_ID: ${env:COGNITO_CLIENT_ID}
+    S3_RECEIPTS_BUCKET: ${env:S3_RECEIPTS_BUCKET}
+  
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:PutItem
+            - dynamodb:GetItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:Query
+            - dynamodb:BatchWriteItem
+            - dynamodb:BatchGetItem
+          Resource: "arn:aws:dynamodb:ap-south-1:741846356523:table/TrackMyExpense-prod"
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+            - s3:GetObject
+            - s3:DeleteObject
+          Resource: "arn:aws:s3:::trackmyexpense-receipts-prod-741846356523/*"
+
+functions:
+  health:
+    handler: src/functions/health.handler
+    events:
+      - http:
+          path: /health
+          method: get
+          cors: true
+
+plugins:
+  - serverless-plugin-typescript
+  - serverless-offline
+
+custom:
+  serverless-offline:
+    httpPort: 4000
+    noPrependStageInUrl: true
