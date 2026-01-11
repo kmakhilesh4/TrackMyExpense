@@ -1,7 +1,7 @@
 import { z, ZodSchema, ZodError } from 'zod';
 import { APIGatewayProxyEvent } from 'aws-lambda';
-import { validationErrorResponse } from '../utils/response';
-import logger from '../utils/logger';
+import { validationErrorResponse } from '../utils/response.js';
+import logger from '../utils/logger.js';
 
 /**
  * Validate request body against a Zod schema
@@ -72,48 +72,42 @@ export class ValidationError extends Error {
 /**
  * Middleware wrapper for request validation
  */
-export function withValidation<TBody, TQuery = any, TPath = any>(
+export function withValidation(
     schemas: {
-        body?: ZodSchema<TBody>;
-        query?: ZodSchema<TQuery>;
-        path?: ZodSchema<TPath>;
-    },
-    handler: (
-        event: APIGatewayProxyEvent,
-        validated: {
-            body?: TBody;
-            query?: TQuery;
-            path?: TPath;
-        }
-    ) => Promise<any>
+        body?: z.ZodTypeAny;
+        query?: z.ZodTypeAny;
+        path?: z.ZodTypeAny;
+    }
 ) {
-    return async (event: APIGatewayProxyEvent) => {
-        try {
-            const validated: any = {};
+    return (handler: (event: APIGatewayProxyEvent, ...args: any[]) => Promise<any>) => {
+        return async (event: APIGatewayProxyEvent, ...args: any[]) => {
+            try {
+                const validated: any = {};
 
-            // Validate body
-            if (schemas.body) {
-                validated.body = validateBody(schemas.body, event.body);
-            }
+                // Validate body
+                if (schemas.body) {
+                    validated.body = validateBody(schemas.body, event.body);
+                }
 
-            // Validate query parameters
-            if (schemas.query) {
-                validated.query = validateQueryParams(schemas.query, event.queryStringParameters);
-            }
+                // Validate query parameters
+                if (schemas.query) {
+                    validated.query = validateQueryParams(schemas.query, event.queryStringParameters);
+                }
 
-            // Validate path parameters
-            if (schemas.path) {
-                validated.path = validatePathParams(schemas.path, event.pathParameters);
-            }
+                // Validate path parameters
+                if (schemas.path) {
+                    validated.path = validatePathParams(schemas.path, event.pathParameters);
+                }
 
-            return await handler(event, validated);
-        } catch (error) {
-            if (error instanceof ValidationError) {
-                logger.warn('Validation error', { errors: error.errors });
-                return validationErrorResponse(error.errors);
+                return await handler(event, ...args, validated);
+            } catch (error) {
+                if (error instanceof ValidationError) {
+                    logger.warn('Validation error', { errors: error.errors });
+                    return validationErrorResponse(error.errors);
+                }
+                throw error;
             }
-            throw error;
-        }
+        };
     };
 }
 

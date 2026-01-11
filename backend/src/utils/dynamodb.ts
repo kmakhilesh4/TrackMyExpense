@@ -8,6 +8,7 @@ import {
     DeleteCommand,
     BatchWriteCommand,
     BatchGetCommand,
+    TransactWriteCommand,
 } from '@aws-sdk/lib-dynamodb';
 
 // Create DynamoDB client
@@ -44,7 +45,7 @@ export async function putItem(item: Record<string, any>) {
 /**
  * Get item from DynamoDB
  */
-export async function getItem(key: { UserId: string; EntityType: string }) {
+export async function getItem(key: Record<string, any>) {
     const command = new GetCommand({
         TableName: TABLE_NAME,
         Key: key,
@@ -88,7 +89,7 @@ export async function queryItems(params: {
  * Update item in DynamoDB
  */
 export async function updateItem(params: {
-    key: { UserId: string; EntityType: string };
+    key: Record<string, any>;
     updateExpression: string;
     expressionAttributeValues: Record<string, any>;
     expressionAttributeNames?: Record<string, string>;
@@ -111,7 +112,7 @@ export async function updateItem(params: {
 /**
  * Delete item from DynamoDB
  */
-export async function deleteItem(key: { UserId: string; EntityType: string }) {
+export async function deleteItem(key: Record<string, any>) {
     const command = new DeleteCommand({
         TableName: TABLE_NAME,
         Key: key,
@@ -136,7 +137,7 @@ export async function batchWriteItems(items: Array<{ PutRequest?: { Item: any };
 /**
  * Batch get items
  */
-export async function batchGetItems(keys: Array<{ UserId: string; EntityType: string }>) {
+export async function batchGetItems(keys: Array<Record<string, any>>) {
     const command = new BatchGetCommand({
         RequestItems: {
             [TABLE_NAME]: {
@@ -147,4 +148,14 @@ export async function batchGetItems(keys: Array<{ UserId: string; EntityType: st
 
     const result = await dynamoDb.send(command);
     return result.Responses?.[TABLE_NAME] || [];
+}
+/**
+ * Transactional write items (atomic updates across multiple items)
+ */
+export async function transactWriteItems(items: any[]) {
+    const command = new TransactWriteCommand({
+        TransactItems: items,
+    });
+
+    return await dynamoDb.send(command);
 }

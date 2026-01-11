@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { internalServerErrorResponse, badRequestResponse } from '../utils/response';
-import { createLogger } from '../utils/logger';
-import { ValidationError } from './validation.middleware';
+import { internalServerErrorResponse, badRequestResponse } from '../utils/response.js';
+import { createLogger } from '../utils/logger.js';
+import { ValidationError } from './validation.middleware.js';
 
 /**
  * Custom application errors

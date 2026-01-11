@@ -1,8 +1,8 @@
 import { APIGatewayProxyHandler } from 'aws-lambda';
-import { successResponse } from '../utils/response';
-import { dynamoDb, TABLE_NAME } from '../utils/dynamodb';
+import { successResponse } from '../utils/response.js';
+import { dynamoDb, TABLE_NAME } from '../utils/dynamodb.js';
 import { DescribeTableCommand } from '@aws-sdk/client-dynamodb';
-import logger from '../utils/logger';
+import logger from '../utils/logger.js';
 
 /**
  * Health check handler to verify API and database connectivity

@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { CognitoJwtVerifier } from 'aws-jwt-verify';
-import { unauthorizedResponse } from '../utils/response';
-import logger from '../utils/logger';
+import { unauthorizedResponse } from '../utils/response.js';
+import logger from '../utils/logger.js';
 
 // Create JWT verifier for Cognito
 const verifier = CognitoJwtVerifier.create({
