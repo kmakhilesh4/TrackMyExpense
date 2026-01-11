@@ -12,8 +12,8 @@ import { v4 as uuidv4 } from 'uuid';
  * Budget Repository
  * Handles DynamoDB interactions for Budgets
  * Key Pattern:
- * PK: USER#{userId}
- * SK: BUDGET#{budgetId}
+ * UserId: USER#{userId}
+ * EntityType: BUDGET#{budgetId}
  */
 export class BudgetRepository {
     private readonly ENTITY_TYPE = 'BUDGET';
@@ -26,9 +26,9 @@ export class BudgetRepository {
         const skPrefix = `${this.ENTITY_TYPE}#`;
 
         const result = await queryItems({
-            keyConditionExpression: 'PK = :pk AND begins_with(SK, :skPrefix)',
+            keyConditionExpression: 'UserId = :userId AND begins_with(EntityType, :skPrefix)',
             expressionAttributeValues: {
-                ':pk': pk,
+                ':userId': pk,
                 ':skPrefix': skPrefix,
             },
         });
@@ -43,20 +43,20 @@ export class BudgetRepository {
         const pk = `USER#${userId}`;
         const sk = `${this.ENTITY_TYPE}#${budgetId}`;
 
-        const item = await getItem({ PK: pk, SK: sk });
+        const item = await getItem({ UserId: pk, EntityType: sk });
         return (item as BudgetEntity) || null;
     }
 
     /**
      * Create a new budget
      */
-    async create(userId: string, data: Omit<BudgetEntity, 'PK' | 'SK' | 'createdAt' | 'updatedAt'>): Promise<BudgetEntity> {
+    async create(userId: string, data: Omit<BudgetEntity, 'UserId' | 'EntityType' | 'createdAt' | 'updatedAt'>): Promise<BudgetEntity> {
         const budgetId = uuidv4();
         const now = new Date().toISOString();
 
         const budget: BudgetEntity = {
-            PK: `USER#${userId}`,
-            SK: `${this.ENTITY_TYPE}#${budgetId}`,
+            UserId: `USER#${userId}`,
+            EntityType: `${this.ENTITY_TYPE}#${budgetId}`,
             ...data,
             createdAt: now,
             updatedAt: now,
@@ -69,7 +69,7 @@ export class BudgetRepository {
     /**
      * Update an existing budget
      */
-    async update(userId: string, budgetId: string, data: Partial<Omit<BudgetEntity, 'PK' | 'SK' | 'createdAt'>>): Promise<BudgetEntity> {
+    async update(userId: string, budgetId: string, data: Partial<Omit<BudgetEntity, 'UserId' | 'EntityType' | 'createdAt'>>): Promise<BudgetEntity> {
         const pk = `USER#${userId}`;
         const sk = `${this.ENTITY_TYPE}#${budgetId}`;
         const now = new Date().toISOString();
@@ -91,7 +91,7 @@ export class BudgetRepository {
         });
 
         const result = await updateItem({
-            key: { PK: pk, SK: sk },
+            key: { UserId: pk, EntityType: sk },
             updateExpression,
             expressionAttributeValues,
             expressionAttributeNames,
@@ -107,6 +107,6 @@ export class BudgetRepository {
         const pk = `USER#${userId}`;
         const sk = `${this.ENTITY_TYPE}#${budgetId}`;
 
-        await deleteItem({ PK: pk, SK: sk });
+        await deleteItem({ UserId: pk, EntityType: sk });
     }
 }

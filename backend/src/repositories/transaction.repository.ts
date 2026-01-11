@@ -11,8 +11,8 @@ import { TransactionQueryFilters } from '../middleware/transaction.validation.js
  * Transaction Repository
  * Handles DynamoDB interactions for Transactions
  * Key Pattern:
- * PK: USER#{userId}
- * SK: TX#{transactionDate}#{transactionId}
+ * UserId: USER#{userId}
+ * EntityType: TX#{transactionDate}#{transactionId}
  */
 export class TransactionRepository {
     private readonly ENTITY_PREFIX = 'TX';
@@ -25,25 +25,25 @@ export class TransactionRepository {
         let skPrefix = `${this.ENTITY_PREFIX}#`;
 
         const expressionAttributeValues: Record<string, any> = {
-            ':pk': pk
+            ':userId': pk
         };
         const expressionAttributeNames: Record<string, string> = {};
 
-        let keyConditionExpression = 'PK = :pk';
+        let keyConditionExpression = 'UserId = :userId';
 
         // Filter by date range if provided
         if (filters.startDate && filters.endDate) {
-            keyConditionExpression += ` AND SK BETWEEN :start AND :end`;
+            keyConditionExpression += ` AND EntityType BETWEEN :start AND :end`;
             expressionAttributeValues[':start'] = `${skPrefix}${filters.startDate}`;
             expressionAttributeValues[':end'] = `${skPrefix}${filters.endDate}Z`; // Z to ensure inclusive end of day
         } else if (filters.startDate) {
-            keyConditionExpression += ` AND SK >= :start`;
+            keyConditionExpression += ` AND EntityType >= :start`;
             expressionAttributeValues[':start'] = `${skPrefix}${filters.startDate}`;
         } else if (filters.endDate) {
-            keyConditionExpression += ` AND SK <= :end`;
+            keyConditionExpression += ` AND EntityType <= :end`;
             expressionAttributeValues[':end'] = `${skPrefix}${filters.endDate}Z`;
         } else {
-            keyConditionExpression += ` AND begins_with(SK, :prefix)`;
+            keyConditionExpression += ` AND begins_with(EntityType, :prefix)`;
             expressionAttributeValues[':prefix'] = skPrefix;
         }
 
@@ -102,7 +102,7 @@ export class TransactionRepository {
      */
     async get(userId: string, sk: string): Promise<TransactionEntity | null> {
         const pk = `USER#${userId}`;
-        const item = await getItem({ PK: pk, SK: sk });
+        const item = await getItem({ UserId: pk, EntityType: sk });
         return (item as TransactionEntity) || null;
     }
 
@@ -110,12 +110,12 @@ export class TransactionRepository {
      * Prepare Create Transaction Operation
      * Returns the object for TransactWriteItems
      */
-    prepareCreate(userId: string, data: Omit<TransactionEntity, 'PK' | 'SK' | 'createdAt' | 'updatedAt'>): { transaction: TransactionEntity, op: any } {
+    prepareCreate(userId: string, data: Omit<TransactionEntity, 'UserId' | 'EntityType' | 'createdAt' | 'updatedAt'>): { transaction: TransactionEntity, op: any } {
         const id = uuidv4();
         const now = new Date().toISOString();
         const transaction: TransactionEntity = {
-            PK: `USER#${userId}`,
-            SK: `${this.ENTITY_PREFIX}#${data.transactionDate}#${id}`,
+            UserId: `USER#${userId}`,
+            EntityType: `${this.ENTITY_PREFIX}#${data.transactionDate}#${id}`,
             ...data,
             createdAt: now,
             updatedAt: now,
@@ -139,7 +139,7 @@ export class TransactionRepository {
         return {
             Delete: {
                 TableName: TABLE_NAME,
-                Key: { PK: `USER#${userId}`, SK: sk }
+                Key: { UserId: `USER#${userId}`, EntityType: sk }
             }
         };
     }

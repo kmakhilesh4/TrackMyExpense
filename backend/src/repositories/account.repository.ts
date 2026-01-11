@@ -13,8 +13,8 @@ import { v4 as uuidv4 } from 'uuid';
  * Account Repository
  * Handles DynamoDB interactions for Accounts
  * Key Pattern:
- * PK: USER#{userId}
- * SK: ACCOUNT#{accountId}
+ * UserId: USER#{userId}
+ * EntityType: ACCOUNT#{accountId}
  */
 export class AccountRepository {
     private readonly ENTITY_TYPE = 'ACCOUNT';
@@ -27,9 +27,9 @@ export class AccountRepository {
         const skPrefix = `${this.ENTITY_TYPE}#`;
 
         const result = await queryItems({
-            keyConditionExpression: 'PK = :pk AND begins_with(SK, :skPrefix)',
+            keyConditionExpression: 'UserId = :userId AND begins_with(EntityType, :skPrefix)',
             expressionAttributeValues: {
-                ':pk': pk,
+                ':userId': pk,
                 ':skPrefix': skPrefix,
             },
         });
@@ -44,20 +44,20 @@ export class AccountRepository {
         const pk = `USER#${userId}`;
         const sk = `${this.ENTITY_TYPE}#${accountId}`;
 
-        const item = await getItem({ PK: pk, SK: sk });
+        const item = await getItem({ UserId: pk, EntityType: sk });
         return (item as AccountEntity) || null;
     }
 
     /**
      * Create a new account
      */
-    async create(userId: string, data: Omit<AccountEntity, 'PK' | 'SK' | 'createdAt' | 'updatedAt'>): Promise<AccountEntity> {
+    async create(userId: string, data: Omit<AccountEntity, 'UserId' | 'EntityType' | 'createdAt' | 'updatedAt'>): Promise<AccountEntity> {
         const accountId = uuidv4();
         const now = new Date().toISOString();
 
         const account: AccountEntity = {
-            PK: `USER#${userId}`,
-            SK: `${this.ENTITY_TYPE}#${accountId}`,
+            UserId: `USER#${userId}`,
+            EntityType: `${this.ENTITY_TYPE}#${accountId}`,
             ...data,
             createdAt: now,
             updatedAt: now,
@@ -70,7 +70,7 @@ export class AccountRepository {
     /**
      * Update an existing account
      */
-    async update(userId: string, accountId: string, data: Partial<Omit<AccountEntity, 'PK' | 'SK' | 'createdAt'>>): Promise<AccountEntity> {
+    async update(userId: string, accountId: string, data: Partial<Omit<AccountEntity, 'UserId' | 'EntityType' | 'createdAt'>>): Promise<AccountEntity> {
         const pk = `USER#${userId}`;
         const sk = `${this.ENTITY_TYPE}#${accountId}`;
         const now = new Date().toISOString();
@@ -92,7 +92,7 @@ export class AccountRepository {
         });
 
         const result = await updateItem({
-            key: { PK: pk, SK: sk },
+            key: { UserId: pk, EntityType: sk },
             updateExpression,
             expressionAttributeValues,
             expressionAttributeNames,
@@ -113,7 +113,7 @@ export class AccountRepository {
         return {
             Update: {
                 TableName: TABLE_NAME,
-                Key: { PK: pk, SK: sk },
+                Key: { UserId: pk, EntityType: sk },
                 UpdateExpression: 'SET balance = balance + :amount, #updatedAt = :now',
                 ExpressionAttributeValues: {
                     ':amount': amount,
@@ -133,6 +133,6 @@ export class AccountRepository {
         const pk = `USER#${userId}`;
         const sk = `${this.ENTITY_TYPE}#${accountId}`;
 
-        await deleteItem({ PK: pk, SK: sk });
+        await deleteItem({ UserId: pk, EntityType: sk });
     }
 }

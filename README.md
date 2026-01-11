@@ -271,8 +271,8 @@ erDiagram
     CATEGORY ||--o{ BUDGET : "applies to"
     
     USER {
-        string PK "USER#userId"
-        string SK "PROFILE"
+        string UserId "USER#userId"
+        string EntityType "PROFILE"
         string email
         string fullName
         string avatarUrl
@@ -281,8 +281,8 @@ erDiagram
     }
     
     ACCOUNT {
-        string PK "USER#userId"
-        string SK "ACCOUNT#accountId"
+        string UserId "USER#userId"
+        string EntityType "ACCOUNT#accountId"
         string accountName
         string accountType
         number balance
@@ -292,8 +292,8 @@ erDiagram
     }
     
     TRANSACTION {
-        string PK "USER#userId"
-        string SK "TRANSACTION#date#transactionId"
+        string UserId "USER#userId"
+        string EntityType "TRANSACTION#date#transactionId"
         string accountId
         string categoryId
         string type
@@ -305,8 +305,8 @@ erDiagram
     }
     
     BUDGET {
-        string PK "USER#userId"
-        string SK "BUDGET#categoryId#period"
+        string UserId "USER#userId"
+        string EntityType "BUDGET#categoryId#period"
         number amount
         string startDate
         string endDate
@@ -314,8 +314,8 @@ erDiagram
     }
     
     CATEGORY {
-        string PK "CATEGORY"
-        string SK "categoryId"
+        string UserId "CATEGORY"
+        string EntityType "categoryId"
         string name
         string type
         string icon
@@ -326,7 +326,7 @@ erDiagram
 
 ### Access Patterns
 
-| Pattern | PK | SK | GSI |
+| Pattern | UserId | EntityType | GSI |
 |---------|----|----|-----|
 | Get user profile | USER#userId | PROFILE | - |
 | Get all accounts | USER#userId | begins_with(ACCOUNT#) | - |

@@ -12,8 +12,8 @@ import { v4 as uuidv4 } from 'uuid';
  * Category Repository
  * Handles DynamoDB interactions for Categories
  * Key Pattern:
- * PK: USER#{userId}
- * SK: CATEGORY#{categoryId}
+ * UserId: USER#{userId}
+ * EntityType: CATEGORY#{categoryId}
  */
 export class CategoryRepository {
     private readonly ENTITY_TYPE = 'CATEGORY';
@@ -26,9 +26,9 @@ export class CategoryRepository {
         const skPrefix = `${this.ENTITY_TYPE}#`;
 
         const result = await queryItems({
-            keyConditionExpression: 'PK = :pk AND begins_with(SK, :skPrefix)',
+            keyConditionExpression: 'UserId = :userId AND begins_with(EntityType, :skPrefix)',
             expressionAttributeValues: {
-                ':pk': pk,
+                ':userId': pk,
                 ':skPrefix': skPrefix,
             },
         });
@@ -43,20 +43,20 @@ export class CategoryRepository {
         const pk = `USER#${userId}`;
         const sk = `${this.ENTITY_TYPE}#${categoryId}`;
 
-        const item = await getItem({ PK: pk, SK: sk });
+        const item = await getItem({ UserId: pk, EntityType: sk });
         return (item as CategoryEntity) || null;
     }
 
     /**
      * Create a new category
      */
-    async create(userId: string, data: Omit<CategoryEntity, 'PK' | 'SK' | 'createdAt' | 'updatedAt'>): Promise<CategoryEntity> {
+    async create(userId: string, data: Omit<CategoryEntity, 'UserId' | 'EntityType' | 'createdAt' | 'updatedAt'>): Promise<CategoryEntity> {
         const categoryId = uuidv4();
         const now = new Date().toISOString();
 
         const category: CategoryEntity = {
-            PK: `USER#${userId}`,
-            SK: `${this.ENTITY_TYPE}#${categoryId}`,
+            UserId: `USER#${userId}`,
+            EntityType: `${this.ENTITY_TYPE}#${categoryId}`,
             ...data,
             createdAt: now,
             updatedAt: now,
@@ -69,7 +69,7 @@ export class CategoryRepository {
     /**
      * Update an existing category
      */
-    async update(userId: string, categoryId: string, data: Partial<Omit<CategoryEntity, 'PK' | 'SK' | 'createdAt'>>): Promise<CategoryEntity> {
+    async update(userId: string, categoryId: string, data: Partial<Omit<CategoryEntity, 'UserId' | 'EntityType' | 'createdAt'>>): Promise<CategoryEntity> {
         const pk = `USER#${userId}`;
         const sk = `${this.ENTITY_TYPE}#${categoryId}`;
         const now = new Date().toISOString();
@@ -92,7 +92,7 @@ export class CategoryRepository {
         });
 
         const result = await updateItem({
-            key: { PK: pk, SK: sk },
+            key: { UserId: pk, EntityType: sk },
             updateExpression,
             expressionAttributeValues,
             expressionAttributeNames,
@@ -108,6 +108,6 @@ export class CategoryRepository {
         const pk = `USER#${userId}`;
         const sk = `${this.ENTITY_TYPE}#${categoryId}`;
 
-        await deleteItem({ PK: pk, SK: sk });
+        await deleteItem({ UserId: pk, EntityType: sk });
     }
 }

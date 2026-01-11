@@ -158,13 +158,13 @@ Record a new expense or income.
   ```
 
 ### Delete Transaction
-Remove a transaction. Note that this requires the Sort Key (`sk`) as a query parameter.
+Remove a transaction. Note that this requires the Sort Key (`EntityType`) as a query parameter.
 
 - **URL:** `/transactions`
 - **Method:** `DELETE`
 - **Auth Required:** Yes
 - **Query Parameters:**
-  - `sk`: The full Sort Key of the transaction (e.g., `TRANSACTION#2026-01-11#uuid`)
+  - `sk`: The full Sort Key (`EntityType`) of the transaction (e.g., `TRANSACTION#2026-01-11#uuid`)
 
 ---
 

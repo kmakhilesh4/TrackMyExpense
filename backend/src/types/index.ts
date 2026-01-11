@@ -2,8 +2,8 @@
 
 // DynamoDB entity types
 export interface DynamoDBEntity {
-    PK: string;
-    SK: string;
+    UserId: string;
+    EntityType: string;
     createdAt: string;
     updatedAt?: string;
 }

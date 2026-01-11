@@ -1,108 +1,53 @@
-// User types
-export interface User {
-    id: string;
+export interface DynamoDBEntity {
+    UserId: string;
+    EntityType: string;
+    createdAt: string;
+    updatedAt?: string;
+}
+
+export interface User extends DynamoDBEntity {
     email: string;
     fullName: string;
     avatarUrl?: string;
-    createdAt: string;
-    updatedAt: string;
 }
 
-// Account types
-export type AccountType = 'checking' | 'savings' | 'credit_card' | 'cash' | 'investment';
-
-export interface Account {
-    id: string;
-    userId: string;
+export interface Account extends DynamoDBEntity {
     accountName: string;
-    accountType: AccountType;
+    accountType: 'checking' | 'savings' | 'credit_card' | 'cash' | 'investment';
     balance: number;
     currency: string;
     isActive: boolean;
-    createdAt: string;
-    updatedAt: string;
 }
 
-// Transaction types
-export type TransactionType = 'expense' | 'income';
-
-export interface Transaction {
-    id: string;
-    userId: string;
+export interface Transaction extends DynamoDBEntity {
     accountId: string;
     categoryId: string;
-    type: TransactionType;
+    type: 'expense' | 'income';
     amount: number;
     description: string;
     receiptUrl?: string;
     transactionDate: string;
-    createdAt: string;
-    updatedAt: string;
 }
 
-// Category types
-export type CategoryType = 'expense' | 'income';
-
-export interface Category {
-    id: string;
+export interface Category extends DynamoDBEntity {
     name: string;
-    type: CategoryType;
+    type: 'expense' | 'income';
     icon: string;
     color: string;
     isDefault: boolean;
 }
 
-// Budget types
-export type BudgetPeriod = 'weekly' | 'monthly' | 'yearly';
-
-export interface Budget {
-    id: string;
-    userId: string;
+export interface Budget extends DynamoDBEntity {
     categoryId: string;
     amount: number;
-    period: BudgetPeriod;
+    period: 'weekly' | 'monthly' | 'yearly';
     startDate: string;
     endDate: string;
-    createdAt: string;
 }
 
-// API Response types
 export interface ApiResponse<T> {
     success: boolean;
     data?: T;
     error?: string;
-    message?: string;
-}
-
-export interface PaginatedResponse<T> {
-    items: T[];
-    total: number;
-    page: number;
-    pageSize: number;
-    hasMore: boolean;
-}
-
-// Auth types
-export interface LoginCredentials {
-    email: string;
-    password: string;
-}
-
-export interface SignupCredentials {
-    email: string;
-    password: string;
-    fullName: string;
-}
-
-export interface AuthTokens {
-    accessToken: string;
-    refreshToken: string;
-    expiresIn: number;
-}
-
-export interface AuthState {
-    user: User | null;
-    tokens: AuthTokens | null;
-    isAuthenticated: boolean;
-    isLoading: boolean;
+    statusCode: number;
 }
