@@ -6,6 +6,14 @@ import {
     Button,
     IconButton,
     CircularProgress,
+    Menu,
+    MenuItem,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    TextField,
+    DialogContentText,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -13,14 +21,79 @@ import {
     AccountBalance as BankIcon,
     CreditCard as CardIcon,
     AccountBalanceWallet as WalletIcon,
+    Edit as EditIcon,
+    Delete as DeleteIcon,
 } from '@mui/icons-material';
 import GlassCard from '../components/common/GlassCard';
 import AddAccountDialog from '../components/common/AddAccountDialog';
 import { useAccounts } from '../hooks/useAccounts';
 
+// Currency symbol mapping
+const getCurrencySymbol = (currency: string): string => {
+    const symbols: Record<string, string> = {
+        'USD': '$',
+        'EUR': '€',
+        'GBP': '£',
+        'INR': '₹',
+        'JPY': '¥',
+        'CNY': '¥',
+        'AUD': 'A$',
+        'CAD': 'C$',
+    };
+    return symbols[currency] || currency;
+};
+
 const Accounts = () => {
-    const { accounts, isLoading } = useAccounts();
+    const { accounts, isLoading, updateAccount, deleteAccount } = useAccounts();
     const [openDialog, setOpenDialog] = useState(false);
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [selectedAccount, setSelectedAccount] = useState<any>(null);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [editBalance, setEditBalance] = useState('');
+
+    const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, account: any) => {
+        setAnchorEl(event.currentTarget);
+        setSelectedAccount(account);
+    };
+
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+    };
+
+    const handleEditClick = () => {
+        if (selectedAccount) {
+            setEditBalance(selectedAccount.balance.toString());
+            setEditDialogOpen(true);
+            handleMenuClose();
+        }
+    };
+
+    const handleDeleteClick = () => {
+        setDeleteDialogOpen(true);
+        handleMenuClose();
+    };
+
+    const handleEditSubmit = async () => {
+        if (selectedAccount) {
+            const accountId = selectedAccount.EntityType.split('#')[1];
+            await updateAccount.mutateAsync({
+                accountId,
+                data: { balance: parseFloat(editBalance) }
+            });
+            setEditDialogOpen(false);
+            setSelectedAccount(null);
+        }
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (selectedAccount) {
+            const accountId = selectedAccount.EntityType.split('#')[1];
+            await deleteAccount.mutateAsync(accountId);
+            setDeleteDialogOpen(false);
+            setSelectedAccount(null);
+        }
+    };
 
     const getIcon = (type: string) => {
         switch (type) {
@@ -77,7 +150,10 @@ const Accounts = () => {
                         </GlassCard>
                     </Grid>
                 )}
-                {accounts.map((account) => (
+                {accounts.map((account) => {
+                    const currencySymbol = getCurrencySymbol(account.currency);
+                    
+                    return (
                     <Grid item xs={12} md={4} key={account.EntityType}>
                         <GlassCard sx={{ borderLeft: `4px solid ${getAccountColor(account.accountType)} !important`, height: '100%' }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
@@ -94,7 +170,7 @@ const Accounts = () => {
                                 >
                                     {getIcon(account.accountType)}
                                 </Box>
-                                <IconButton size="small">
+                                <IconButton size="small" onClick={(e) => handleMenuOpen(e, account)}>
                                     <MoreVertIcon />
                                 </IconButton>
                             </Box>
@@ -111,13 +187,83 @@ const Accounts = () => {
                                     CURRENT BALANCE
                                 </Typography>
                                 <Typography variant="h4" sx={{ fontWeight: 800, color: account.balance < 0 ? 'error.main' : 'text.primary' }}>
-                                    {account.balance < 0 ? '- ' : ''}${Math.abs(account.balance).toLocaleString()}
+                                    {account.balance < 0 ? '- ' : ''}{currencySymbol}{Math.abs(account.balance).toLocaleString()}
                                 </Typography>
                             </Box>
                         </GlassCard>
                     </Grid>
-                ))}
+                    );
+                })}
             </Grid>
+
+            {/* Context Menu */}
+            <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+            >
+                <MenuItem onClick={handleEditClick}>
+                    <EditIcon sx={{ mr: 1, fontSize: 20 }} />
+                    Edit Balance
+                </MenuItem>
+                <MenuItem onClick={handleDeleteClick} sx={{ color: 'error.main' }}>
+                    <DeleteIcon sx={{ mr: 1, fontSize: 20 }} />
+                    Delete Account
+                </MenuItem>
+            </Menu>
+
+            {/* Edit Balance Dialog */}
+            <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="xs" fullWidth>
+                <DialogTitle>Edit Account Balance</DialogTitle>
+                <DialogContent>
+                    <Box sx={{ pt: 2 }}>
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                            Account: {selectedAccount?.accountName}
+                        </Typography>
+                        <TextField
+                            label="New Balance"
+                            type="number"
+                            fullWidth
+                            value={editBalance}
+                            onChange={(e) => setEditBalance(e.target.value)}
+                            inputProps={{ step: 0.01 }}
+                            sx={{ mt: 2 }}
+                        />
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+                    <Button 
+                        onClick={handleEditSubmit} 
+                        variant="contained"
+                        disabled={!editBalance || updateAccount.isPending}
+                    >
+                        {updateAccount.isPending ? <CircularProgress size={24} /> : 'Update'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} maxWidth="xs" fullWidth>
+                <DialogTitle>Delete Account?</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Are you sure you want to delete <strong>{selectedAccount?.accountName}</strong>? 
+                        This action cannot be undone and will remove all associated transactions.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+                    <Button 
+                        onClick={handleDeleteConfirm} 
+                        variant="contained" 
+                        color="error"
+                        disabled={deleteAccount.isPending}
+                    >
+                        {deleteAccount.isPending ? <CircularProgress size={24} /> : 'Delete'}
+                    </Button>
+                </DialogActions>
+            </Dialog>
 
             <AddAccountDialog open={openDialog} onClose={() => setOpenDialog(false)} />
         </Box>

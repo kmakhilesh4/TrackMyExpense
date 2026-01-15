@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { getCurrentUser, signOut, signIn, signUp, confirmSignUp, AuthUser, fetchAuthSession } from 'aws-amplify/auth';
 import { Hub } from 'aws-amplify/utils';
 import { toast } from 'react-hot-toast';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AuthContextType {
     user: AuthUser | null;
@@ -19,16 +20,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [user, setUser] = useState<AuthUser | null>(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const queryClient = useQueryClient();
 
     useEffect(() => {
         const unsubscribe = Hub.listen('auth', ({ payload }) => {
             switch (payload.event) {
                 case 'signedIn':
                     checkUser();
+                    // Clear cache and refetch on sign in
+                    queryClient.clear();
                     break;
                 case 'signedOut':
                     setUser(null);
                     setIsAuthenticated(false);
+                    // Clear all cached data on sign out
+                    queryClient.clear();
                     break;
             }
         });
@@ -36,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         checkUser();
 
         return () => unsubscribe();
-    }, []);
+    }, [queryClient]);
 
     const checkUser = async () => {
         try {
@@ -131,6 +137,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const logout = async () => {
         try {
+            // Clear all cached data BEFORE signing out
+            queryClient.clear();
+            
             await signOut();
             setUser(null);
             setIsAuthenticated(false);
@@ -139,6 +148,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (error: any) {
             setUser(null);
             setIsAuthenticated(false);
+            // Still clear cache even on error
+            queryClient.clear();
             console.error('Logout error:', error);
             toast.error('Failed to logout');
         }

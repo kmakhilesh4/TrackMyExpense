@@ -213,13 +213,40 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                 component="main"
                 sx={{
                     flexGrow: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    minHeight: '100vh',
                     p: isAuthPage ? 0 : 3,
                     width: isAuthPage ? '100%' : { md: `calc(100% - ${drawerWidth}px)` },
                     backgroundColor: 'background.default',
                     mt: isAuthPage ? 0 : '64px',
                 }}
             >
-                {children}
+                <Box sx={{ flexGrow: 1 }}>
+                    {children}
+                </Box>
+                
+                {/* Footer */}
+                {!isAuthPage && (
+                    <Box
+                        component="footer"
+                        sx={{
+                            mt: 'auto',
+                            pt: 4,
+                            pb: 2,
+                            textAlign: 'center',
+                            borderTop: '1px solid',
+                            borderColor: 'divider',
+                        }}
+                    >
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                            Built with ❤️ by Akhilesh
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            © {new Date().getFullYear()} TrackMyExpense. All rights reserved.
+                        </Typography>
+                    </Box>
+                )}
             </Box>
         </Box>
     );

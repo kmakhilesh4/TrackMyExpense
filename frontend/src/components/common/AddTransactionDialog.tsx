@@ -14,7 +14,6 @@ import {
     Box,
     CircularProgress,
     Alert,
-    Link,
 } from '@mui/material';
 import { useAccounts } from '../../hooks/useAccounts';
 import { useCategories } from '../../hooks/useCategories';
@@ -25,6 +24,21 @@ interface AddTransactionDialogProps {
     open: boolean;
     onClose: () => void;
 }
+
+// Currency symbol mapping
+const getCurrencySymbol = (currency: string): string => {
+    const symbols: Record<string, string> = {
+        'USD': '$',
+        'EUR': '€',
+        'GBP': '£',
+        'INR': '₹',
+        'JPY': '¥',
+        'CNY': '¥',
+        'AUD': 'A$',
+        'CAD': 'C$',
+    };
+    return symbols[currency] || currency;
+};
 
 const AddTransactionDialog = ({ open, onClose }: AddTransactionDialogProps) => {
     const { accounts } = useAccounts();
@@ -41,6 +55,13 @@ const AddTransactionDialog = ({ open, onClose }: AddTransactionDialogProps) => {
         description: '',
         transactionDate: new Date().toISOString().split('T')[0],
     });
+
+    // Get selected account's currency
+    const selectedAccount = accounts.find(acc => {
+        const accountId = acc.EntityType.split('#')[1];
+        return accountId === formData.accountId;
+    });
+    const currencySymbol = selectedAccount ? getCurrencySymbol(selectedAccount.currency) : '₹';
 
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -80,8 +101,7 @@ const AddTransactionDialog = ({ open, onClose }: AddTransactionDialogProps) => {
     };
 
     const filteredCategories = categories.filter(cat => {
-        const catType = cat.type || cat.EntityType?.includes('income') ? 'income' : 'expense';
-        return catType === formData.type;
+        return cat.type === formData.type;
     });
 
     const isValid = formData.accountId && formData.categoryId && formData.amount && 
@@ -95,14 +115,7 @@ const AddTransactionDialog = ({ open, onClose }: AddTransactionDialogProps) => {
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
                     {categories.length === 0 && (
                         <Alert severity="info">
-                            No categories found. 
-                            <Link 
-                                component="button" 
-                                onClick={() => setOpenCategoryDialog(true)}
-                                sx={{ ml: 1 }}
-                            >
-                                Create one first
-                            </Link>
+                            No categories found. Click "Add New Category" button below to create one.
                         </Alert>
                     )}
 
@@ -149,14 +162,7 @@ const AddTransactionDialog = ({ open, onClose }: AddTransactionDialogProps) => {
                         >
                             {filteredCategories.length === 0 && (
                                 <MenuItem disabled>
-                                    No {formData.type} categories. 
-                                    <Link 
-                                        component="button" 
-                                        onClick={() => setOpenCategoryDialog(true)}
-                                        sx={{ ml: 1 }}
-                                    >
-                                        Add one
-                                    </Link>
+                                    No {formData.type} categories available
                                 </MenuItem>
                             )}
                             {filteredCategories.map((category) => {
@@ -170,6 +176,15 @@ const AddTransactionDialog = ({ open, onClose }: AddTransactionDialogProps) => {
                         </Select>
                     </FormControl>
 
+                    <Button
+                        variant="outlined"
+                        onClick={() => setOpenCategoryDialog(true)}
+                        fullWidth
+                        sx={{ mt: -1 }}
+                    >
+                        + Add New Category
+                    </Button>
+
                     <TextField
                         label="Amount"
                         type="number"
@@ -177,7 +192,7 @@ const AddTransactionDialog = ({ open, onClose }: AddTransactionDialogProps) => {
                         value={formData.amount}
                         onChange={(e) => handleChange('amount', e.target.value)}
                         InputProps={{
-                            startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                            startAdornment: <InputAdornment position="start">{currencySymbol}</InputAdornment>,
                         }}
                         inputProps={{ min: 0, step: 0.01 }}
                     />

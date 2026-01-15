@@ -30,10 +30,39 @@ export const useAccounts = () => {
         },
     });
 
+    const updateAccount = useMutation({
+        mutationFn: async ({ accountId, data }: { accountId: string; data: Partial<Account> }) => {
+            const response = await apiClient.patch<ApiResponse<Account>>(`/accounts/${accountId}`, data);
+            return response.data.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['accounts'] });
+            toast.success('Account updated successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.error || 'Failed to update account');
+        },
+    });
+
+    const deleteAccount = useMutation({
+        mutationFn: async (accountId: string) => {
+            await apiClient.delete(`/accounts/${accountId}`);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['accounts'] });
+            toast.success('Account deleted successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.error || 'Failed to delete account');
+        },
+    });
+
     return {
         accounts: accountsQuery.data || [],
         isLoading: accountsQuery.isLoading,
         isError: accountsQuery.isError,
         createAccount,
+        updateAccount,
+        deleteAccount,
     };
 };

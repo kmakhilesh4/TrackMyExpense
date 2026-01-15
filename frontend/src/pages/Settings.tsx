@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
     Box,
     Typography,
@@ -11,7 +12,8 @@ import {
     ListItemText,
     ListItemIcon,
     TextField,
-    Grid
+    Grid,
+    CircularProgress
 } from '@mui/material';
 import {
     Palette as PaletteIcon,
@@ -22,14 +24,36 @@ import {
 import GlassCard from '../components/common/GlassCard';
 import { useColorMode } from '../App';
 import { useAuth } from '../context/AuthContext';
+import { fetchUserAttributes } from 'aws-amplify/auth';
 
 const Settings = () => {
     const { mode, toggleColorMode } = useColorMode();
     const { user } = useAuth();
+    const [userAttributes, setUserAttributes] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const loadUserAttributes = async () => {
+            try {
+                const attributes = await fetchUserAttributes();
+                setUserAttributes(attributes);
+            } catch (error) {
+                console.error('Failed to fetch user attributes:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (user) {
+            loadUserAttributes();
+        } else {
+            setLoading(false);
+        }
+    }, [user]);
 
     // Extract user info
-    const userEmail = user?.signInDetails?.loginId || user?.username || 'user@example.com';
-    const userName = userEmail.split('@')[0] || 'User';
+    const userEmail = userAttributes?.email || user?.signInDetails?.loginId || user?.username || 'user@example.com';
+    const userName = userAttributes?.name || userEmail.split('@')[0] || 'User';
     const userInitial = userName.charAt(0).toUpperCase();
 
     return (
@@ -43,6 +67,11 @@ const Settings = () => {
                 </Typography>
             </Box>
 
+            {loading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 300 }}>
+                    <CircularProgress />
+                </Box>
+            ) : (
             <Grid container spacing={4}>
                 <Grid item xs={12} md={4}>
                     <GlassCard sx={{ textAlign: 'center', p: 4 }}>
@@ -141,6 +170,7 @@ const Settings = () => {
                     </Stack>
                 </Grid>
             </Grid>
+            )}
         </Box>
     );
 };

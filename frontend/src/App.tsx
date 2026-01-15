@@ -6,7 +6,6 @@ import {
     PaletteMode,
     CircularProgress,
     Box as MuiBox,
-    Box,
 } from '@mui/material';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -17,6 +16,7 @@ import MainLayout from './components/layout/MainLayout';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 // Pages
+import Dashboard from './pages/Dashboard';
 import Accounts from './pages/Accounts';
 import Transactions from './pages/Transactions';
 import Budgets from './pages/Budgets';
@@ -66,17 +66,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <>{children}</>;
 };
 
-const DashboardView = () => {
-    return (
-        <Box sx={{ p: 4 }}>
-            <Box sx={{ textAlign: 'center' }}>
-                <h1>Welcome to TrackMyExpense</h1>
-                <p>Navigate to Accounts or Transactions to get started.</p>
-            </Box>
-        </Box>
-    );
-};
-
 function App() {
     const [mode, setMode] = useState<PaletteMode>('dark');
     
@@ -103,8 +92,8 @@ function App() {
                                 <Routes>
                                     <Route path="/login" element={<Login />} />
                                     <Route path="/signup" element={<Signup />} />
-                                    <Route path="/" element={<ProtectedRoute><DashboardView /></ProtectedRoute>} />
-                                    <Route path="/dashboard" element={<ProtectedRoute><DashboardView /></ProtectedRoute>} />
+                                    <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                                    <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                                     <Route path="/accounts" element={<ProtectedRoute><Accounts /></ProtectedRoute>} />
                                     <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
                                     <Route path="/budgets" element={<ProtectedRoute><Budgets /></ProtectedRoute>} />
