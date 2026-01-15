@@ -1,0 +1,253 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'S3 buckets for TrackMyExpense - Receipts and Frontend Hosting'
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - staging
+      - prod
+    Description: Environment name
+
+Resources:
+  # S3 Bucket for Receipt Storage
+  ReceiptsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'trackmyexpense-receipts-${Environment}-${AWS::AccountId}'
+      
+      # Versioning disabled to save costs
+      VersioningConfiguration:
+        Status: Suspended
+      
+      # Server-side encryption
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      
+      # CORS configuration for uploads from frontend
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins:
+              - 'http://localhost:3000'
+              - 'https://*.trackmyexpense.com'
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+              - DELETE
+            AllowedHeaders:
+              - '*'
+            MaxAge: 3000
+            ExposedHeaders:
+              - ETag
+      
+      # Lifecycle policy - delete old receipts after 7 years
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteOldReceipts
+            Status: Enabled
+            ExpirationInDays: 2555  # ~7 years
+          - Id: TransitionToIA
+            Status: Enabled
+            Transitions:
+              - TransitionInDays: 90
+                StorageClass: STANDARD_IA
+              - TransitionInDays: 365
+                StorageClass: GLACIER_IR
+      
+      # Public access block
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      
+      # Tags
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: TrackMyExpense
+        - Key: Purpose
+          Value: Receipts
+        - Key: ManagedBy
+          Value: CloudFormation
+  
+  # Bucket policy for receipts bucket
+  ReceiptsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ReceiptsBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowSSLRequestsOnly
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+              - !GetAtt ReceiptsBucket.Arn
+              - !Sub '${ReceiptsBucket.Arn}/*'
+            Condition:
+              Bool:
+                'aws:SecureTransport': false
+  
+  # S3 Bucket for Frontend Static Website Hosting
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub 'trackmyexpense-frontend-${Environment}-${AWS::AccountId}'
+      
+      # Website configuration
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html  # For SPA routing
+      
+      # Versioning enabled for rollback capability
+      VersioningConfiguration:
+        Status: Enabled
+      
+      # Server-side encryption
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      
+      # Public access block (will be accessed via CloudFront)
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: false  # Allow CloudFront access
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: false
+      
+      # Tags
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: TrackMyExpense
+        - Key: Purpose
+          Value: Frontend
+        - Key: ManagedBy
+          Value: CloudFormation
+  
+  # CloudFront Origin Access Identity
+  CloudFrontOAI:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub 'OAI for TrackMyExpense ${Environment}'
+  
+  # Bucket policy for frontend bucket (CloudFront access)
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowCloudFrontOAI
+            Effect: Allow
+            Principal:
+              CanonicalUser: !GetAtt CloudFrontOAI.S3CanonicalUserId
+            Action: 's3:GetObject'
+            Resource: !Sub '${FrontendBucket.Arn}/*'
+          - Sid: AllowSSLRequestsOnly
+            Effect: Deny
+            Principal: '*'
+            Action: 's3:*'
+            Resource:
+              - !GetAtt FrontendBucket.Arn
+              - !Sub '${FrontendBucket.Arn}/*'
+            Condition:
+              Bool:
+                'aws:SecureTransport': false
+  
+  # CloudFront Distribution for Frontend
+  FrontendDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+          - DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            Id: S3Origin
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOAI}'
+        Enabled: true
+        DefaultRootObject: index.html
+        DefaultCacheBehavior:
+            TargetOriginId: S3Origin
+            ViewerProtocolPolicy: redirect-to-http
+            AllowedMethods:
+              - GET
+              - HEAD
+            CachedMethods:
+              - GET
+              - HEAD
+            ForwardedValues:
+              QueryString: false
+              Cookies:
+                Forward: none
+        CustomErrorResponses:
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+        HttpVersion: http2
+        PriceClass: PriceClass_All
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Application
+          Value: TrackMyExpense
+
+Outputs:
+  ReceiptsBucketName:
+    Description: Name of the receipts S3 bucket
+    Value: !Ref ReceiptsBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-ReceiptsBucketName'
+  
+  ReceiptsBucketArn:
+    Description: ARN of the receipts S3 bucket
+    Value: !GetAtt ReceiptsBucket.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-ReceiptsBucketArn'
+  
+  FrontendBucketName:
+    Description: Name of the frontend S3 bucket
+    Value: !Ref FrontendBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-FrontendBucketName'
+  
+  FrontendBucketArn:
+    Description: ARN of the frontend S3 bucket
+    Value: !GetAtt FrontendBucket.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-FrontendBucketArn'
+  
+  FrontendBucketWebsiteURL:
+    Description: Website URL of the frontend bucket
+    Value: !GetAtt FrontendBucket.WebsiteURL
+    Export:
+      Name: !Sub '${AWS::StackName}-FrontendBucketWebsiteURL'
+  
+  CloudFrontOAI:
+    Description: CloudFront Origin Access Identity
+    Value: !Ref CloudFrontOAI
+    Export:
+      Name: !Sub '${AWS::StackName}-CloudFrontOAI'
+  
+  CloudFrontDomainName:
+    Description: CloudFront Distribution Domain Name
+    Value: !GetAtt FrontendDistribution.DomainName
+    Export:
+      Name: !Sub '${AWS::StackName}-CloudFrontDomainName'

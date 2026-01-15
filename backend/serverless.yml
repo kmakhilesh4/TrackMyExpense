@@ -1,0 +1,176 @@
+service: trackmyexpense-backend
+
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: ${opt:region, 'ap-south-1'}
+  stage: ${opt:stage, 'prod'}
+  memorySize: 512
+  timeout: 10
+  environment:
+    NODE_ENV: ${self:provider.stage}
+    DYNAMODB_TABLE_NAME: ${env:DYNAMODB_TABLE_NAME, 'TrackMyExpense-prod'}
+    COGNITO_USER_POOL_ID: ${env:COGNITO_USER_POOL_ID, 'local_user_pool_id'}
+    COGNITO_CLIENT_ID: ${env:COGNITO_CLIENT_ID, 'local_client_id'}
+    S3_RECEIPTS_BUCKET: ${env:S3_RECEIPTS_BUCKET, 'local_receipts_bucket'}
+  
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:PutItem
+            - dynamodb:GetItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+            - dynamodb:Query
+            - dynamodb:BatchWriteItem
+            - dynamodb:BatchGetItem
+            - dynamodb:DescribeTable
+          Resource: "arn:aws:dynamodb:ap-south-1:741846356523:table/TrackMyExpense-prod"
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+            - s3:GetObject
+            - s3:DeleteObject
+          Resource: "arn:aws:s3:::trackmyexpense-receipts-prod-741846356523/*"
+
+functions:
+  health:
+    handler: src/functions/health.handler
+    events:
+      - http:
+          path: /health
+          method: get
+          cors: true
+
+  listCategories:
+    handler: src/functions/category.list
+    events:
+      - http:
+          path: /categories
+          method: get
+          cors: true
+
+  createCategory:
+    handler: src/functions/category.create
+    events:
+      - http:
+          path: /categories
+          method: post
+          cors: true
+
+  updateCategory:
+    handler: src/functions/category.update
+    events:
+      - http:
+          path: /categories/{id}
+          method: patch
+          cors: true
+
+  deleteCategory:
+    handler: src/functions/category.deleteCategory
+    events:
+      - http:
+          path: /categories/{id}
+          method: delete
+          cors: true
+
+  listAccounts:
+    handler: src/functions/account.list
+    events:
+      - http:
+          path: /accounts
+          method: get
+          cors: true
+
+  createAccount:
+    handler: src/functions/account.create
+    events:
+      - http:
+          path: /accounts
+          method: post
+          cors: true
+
+  updateAccount:
+    handler: src/functions/account.update
+    events:
+      - http:
+          path: /accounts/{id}
+          method: patch
+          cors: true
+
+  deleteAccount:
+    handler: src/functions/account.deleteAccount
+    events:
+      - http:
+          path: /accounts/{id}
+          method: delete
+          cors: true
+
+  listTransactions:
+    handler: src/functions/transaction.list
+    events:
+      - http:
+          path: /transactions
+          method: get
+          cors: true
+
+  createTransaction:
+    handler: src/functions/transaction.create
+    events:
+      - http:
+          path: /transactions
+          method: post
+          cors: true
+
+  deleteTransaction:
+    handler: src/functions/transaction.deleteTransaction
+    events:
+      - http:
+          path: /transactions
+          method: delete
+          cors: true
+
+  listBudgets:
+    handler: src/functions/budget.list
+    events:
+      - http:
+          path: /budgets
+          method: get
+          cors: true
+
+  createBudget:
+    handler: src/functions/budget.create
+    events:
+      - http:
+          path: /budgets
+          method: post
+          cors: true
+
+  updateBudget:
+    handler: src/functions/budget.update
+    events:
+      - http:
+          path: /budgets/{id}
+          method: patch
+          cors: true
+
+  deleteBudget:
+    handler: src/functions/budget.deleteBudget
+    events:
+      - http:
+          path: /budgets/{id}
+          method: delete
+          cors: true
+
+plugins:
+  - serverless-plugin-typescript
+  - serverless-offline
+
+custom:
+  serverless-offline:
+    httpPort: 4000
+    noPrependStageInUrl: true
