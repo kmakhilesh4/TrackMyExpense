@@ -19,7 +19,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Dashboard from './pages/Dashboard';
 import Accounts from './pages/Accounts';
 import Transactions from './pages/Transactions';
-import Budgets from './pages/Budgets';
+// import Budgets from './pages/Budgets';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -96,7 +96,7 @@ function App() {
                                     <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                                     <Route path="/accounts" element={<ProtectedRoute><Accounts /></ProtectedRoute>} />
                                     <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
-                                    <Route path="/budgets" element={<ProtectedRoute><Budgets /></ProtectedRoute>} />
+                                    {/* <Route path="/budgets" element={<ProtectedRoute><Budgets /></ProtectedRoute>} /> */}
                                     <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
                                     <Route path="*" element={<Navigate to="/" replace />} />
                                 </Routes>

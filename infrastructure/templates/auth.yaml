@@ -73,6 +73,9 @@ Resources:
         - Name: updated_at
           AttributeDataType: Number
           Mutable: true
+        - Name: picture
+          AttributeDataType: String
+          Mutable: true
       
       # Email verification message
       EmailVerificationMessage: 'Welcome to TrackMyExpense! Your verification code is {####}'
@@ -102,8 +105,8 @@ Resources:
         - ALLOW_USER_SRP_AUTH
       
       # Token validity
-      AccessTokenValidity: 1  # 1 hour
-      IdTokenValidity: 1      # 1 hour
+      AccessTokenValidity: 8  # 8 hours
+      IdTokenValidity: 8      # 8 hours
       RefreshTokenValidity: 30  # 30 days
       TokenValidityUnits:
         AccessToken: hours
@@ -119,11 +122,13 @@ Resources:
         - name
         - email_verified
         - updated_at
+        - picture
       
       WriteAttributes:
         - email
         - name
         - updated_at
+        - picture
   
   # User Pool Domain (for hosted UI - optional)
   UserPoolDomain:

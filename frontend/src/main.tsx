@@ -15,6 +15,12 @@ Amplify.configure({
                 email: true,
             }
         }
+    },
+    Storage: {
+        S3: {
+            bucket: import.meta.env.VITE_S3_RECEIPTS_BUCKET,
+            region: import.meta.env.VITE_AWS_REGION || 'ap-south-1',
+        }
     }
 });
 

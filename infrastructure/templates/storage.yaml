@@ -34,6 +34,8 @@ Resources:
           - AllowedOrigins:
               - 'http://localhost:3000'
               - 'https://*.trackmyexpense.com'
+              - 'https://myexpenses.online'
+              - 'https://www.myexpenses.online'
             AllowedMethods:
               - GET
               - PUT

@@ -23,7 +23,7 @@ import {
     Dashboard as DashboardIcon,
     AccountBalanceWallet as AccountIcon,
     Receipt as TransactionIcon,
-    PieChart as AnalyticsIcon,
+    // PieChart as AnalyticsIcon,
     Settings as SettingsIcon,
     Logout as LogoutIcon,
     Brightness4 as DarkModeIcon,
@@ -64,7 +64,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
         { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
         { text: 'Accounts', icon: <AccountIcon />, path: '/accounts' },
         { text: 'Transactions', icon: <TransactionIcon />, path: '/transactions' },
-        { text: 'Budgets', icon: <AnalyticsIcon />, path: '/budgets' },
+        // { text: 'Budgets', icon: <AnalyticsIcon />, path: '/budgets' },
         { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
     ];
 
@@ -163,6 +163,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                                     <NotificationsIcon />
                                 </IconButton>
                                 <Avatar
+                                    onClick={() => navigate('/settings')}
                                     sx={{
                                         ml: 1,
                                         width: 35,
