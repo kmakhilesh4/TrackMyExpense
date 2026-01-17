@@ -33,6 +33,7 @@ import GlassCard from '../components/common/GlassCard';
 import { useColorMode } from '../App';
 import { useAuth } from '../context/AuthContext';
 import { fetchUserAttributes, updateUserAttributes, updatePassword } from 'aws-amplify/auth';
+import { apiClient } from '../services/api';
 import { toast } from 'react-hot-toast';
 
 const Settings = () => {
@@ -59,13 +60,25 @@ const Settings = () => {
     const loadUserAttributes = async () => {
         try {
             const attributes = await fetchUserAttributes();
+            console.log('Settings - Loaded user attributes:', attributes);
             setUserAttributes(attributes);
             setEditName(attributes.name || '');
             
-            // Load profile picture from session storage (temporary solution)
-            const savedPicture = sessionStorage.getItem('profilePicture');
-            if (savedPicture) {
-                setProfilePictureUrl(savedPicture);
+            // Load profile picture URL from API (stored in DynamoDB)
+            try {
+                const response = await apiClient.get('/profile/picture/url');
+                console.log('API response:', response.data);
+                const url = response.data.data?.url || response.data.url;
+                if (url && url !== 'none') {
+                    console.log('Settings - Setting profile picture URL:', url);
+                    setProfilePictureUrl(url);
+                } else {
+                    console.log('No profile picture URL found');
+                    setProfilePictureUrl(null);
+                }
+            } catch (error) {
+                console.log('No profile picture found or error:', error);
+                setProfilePictureUrl(null);
             }
         } catch (error) {
             console.error('Failed to fetch user attributes:', error);
@@ -85,31 +98,73 @@ const Settings = () => {
             return;
         }
 
-        // Validate file size (max 2MB for base64)
-        if (file.size > 2 * 1024 * 1024) {
-            toast.error('Image size should be less than 2MB');
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error('Image size should be less than 5MB');
             return;
         }
 
         setUploading(true);
         try {
-            // Convert image to base64 (temporary solution)
+            // Convert to base64
             const reader = new FileReader();
-            reader.onloadend = () => {
-                const base64String = reader.result as string;
-                
-                // Store in session storage
-                sessionStorage.setItem('profilePicture', base64String);
-                setProfilePictureUrl(base64String);
-                
-                toast.success('Profile picture updated! (Note: Will reset on logout)');
+            reader.onloadend = async () => {
+                try {
+                    const base64Data = reader.result as string;
+
+                    // Upload via API
+                    const response = await apiClient.post('/profile/picture', {
+                        fileName: file.name,
+                        fileType: file.type,
+                        fileData: base64Data,
+                    });
+
+                    console.log('Upload response:', response.data);
+                    const url = response.data.data?.url || response.data.url;
+
+                    // Store URL in state immediately (no Cognito needed)
+                    setProfilePictureUrl(url);
+                    
+                    console.log('Profile picture uploaded successfully, URL:', url);
+                    toast.success('Profile picture updated successfully!');
+                    
+                    // Force reload to ensure consistency
+                    await loadUserAttributes();
+                } catch (error: any) {
+                    console.error('Failed to upload:', error);
+                    toast.error(error.response?.data?.message || 'Failed to upload profile picture');
+                } finally {
+                    setUploading(false);
+                }
             };
             reader.readAsDataURL(file);
         } catch (error: any) {
             console.error('Failed to process profile picture:', error);
-            toast.error(error.message || 'Failed to process profile picture');
-        } finally {
+            toast.error('Failed to process profile picture');
             setUploading(false);
+        }
+    };
+
+    const handleRemoveProfilePicture = async () => {
+        try {
+            // Get current picture info from API
+            const response = await apiClient.get('/profile/picture/url');
+            console.log('Get URL response:', response.data);
+            const key = response.data.data?.key || response.data.key;
+
+            if (key) {
+                // Delete via API
+                await apiClient.delete('/profile/picture', {
+                    data: { key },
+                });
+
+                console.log('Profile picture removed successfully');
+                setProfilePictureUrl(null);
+                toast.success('Profile picture removed');
+            }
+        } catch (error: any) {
+            console.error('Failed to remove profile picture:', error);
+            toast.error(error.response?.data?.message || 'Failed to remove profile picture');
         }
     };
 
@@ -222,14 +277,26 @@ const Settings = () => {
                             </Box>
                             <Typography variant="h5" sx={{ fontWeight: 700 }}>{userName}</Typography>
                             <Typography variant="body2" color="text.secondary" gutterBottom>{userEmail}</Typography>
-                            <Button
-                                variant="outlined"
-                                startIcon={<EditIcon />}
-                                sx={{ mt: 2, borderRadius: 2 }}
-                                onClick={() => setEditDialogOpen(true)}
-                            >
-                                Edit Profile
-                            </Button>
+                            <Stack direction="row" spacing={1} sx={{ mt: 2, justifyContent: 'center' }}>
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<EditIcon />}
+                                    sx={{ borderRadius: 2 }}
+                                    onClick={() => setEditDialogOpen(true)}
+                                >
+                                    Edit Profile
+                                </Button>
+                                {profilePictureUrl && (
+                                    <Button
+                                        variant="outlined"
+                                        color="error"
+                                        sx={{ borderRadius: 2 }}
+                                        onClick={handleRemoveProfilePicture}
+                                    >
+                                        Remove Photo
+                                    </Button>
+                                )}
+                            </Stack>
                         </GlassCard>
                     </Grid>
 

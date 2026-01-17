@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     AppBar,
     Box,
@@ -33,6 +33,7 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useColorMode } from '../../App';
 import { useAuth } from '../../context/AuthContext';
+import { apiClient } from '../../services/api';
 
 const drawerWidth = 260;
 
@@ -48,8 +49,44 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     const { logout, user } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
+    const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
 
     const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
+
+    // Load profile picture from API (stored in DynamoDB)
+    useEffect(() => {
+        const loadProfilePicture = async () => {
+            if (user?.userId || user?.username) {
+                try {
+                    const response = await apiClient.get('/profile/picture/url');
+                    console.log('MainLayout - API response:', response.data);
+                    const url = response.data.data?.url || response.data.url;
+                    if (url && url !== 'none') {
+                        console.log('MainLayout - Setting profile picture URL:', url);
+                        setProfilePictureUrl(url);
+                    } else {
+                        console.log('MainLayout - No picture URL found');
+                        setProfilePictureUrl(null);
+                    }
+                } catch (error) {
+                    console.log('MainLayout - No profile picture found or error:', error);
+                    setProfilePictureUrl(null);
+                }
+            } else {
+                setProfilePictureUrl(null);
+            }
+        };
+
+        // Load immediately on mount or user change
+        loadProfilePicture();
+
+        // Refresh picture every 30 minutes for cross-device sync
+        const interval = setInterval(loadProfilePicture, 30 * 60 * 1000); // 30 minutes
+
+        return () => {
+            clearInterval(interval);
+        };
+    }, [user?.userId, user?.username]);
 
     const handleDrawerToggle = () => {
         setMobileOpen(!mobileOpen);
@@ -163,6 +200,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                                     <NotificationsIcon />
                                 </IconButton>
                                 <Avatar
+                                    src={profilePictureUrl || undefined}
                                     onClick={() => navigate('/settings')}
                                     sx={{
                                         ml: 1,
@@ -175,7 +213,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                                         '&:hover': { borderColor: 'primary.light' }
                                     }}
                                 >
-                                    {user?.signInDetails?.loginId?.charAt(0).toUpperCase() || 'U'}
+                                    {!profilePictureUrl && (user?.signInDetails?.loginId?.charAt(0).toUpperCase() || 'U')}
                                 </Avatar>
                             </Box>
                         </Toolbar>

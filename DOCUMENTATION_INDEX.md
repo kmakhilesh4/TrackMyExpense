@@ -23,6 +23,17 @@ Welcome to TrackMyExpense documentation! This index helps you find the right doc
 - [QUICK_DEPLOY.md](QUICK_DEPLOY.md) - Fast deployment (5 min)
 - [IMPROVEMENTS_SUMMARY.md](IMPROVEMENTS_SUMMARY.md) - Technical summary
 
+### Profile Picture (S3 Storage)
+- [START_HERE_PROFILE_FIX.md](START_HERE_PROFILE_FIX.md) - **START HERE** for profile picture fix
+- [QUICK_ACTION_CHECKLIST.md](QUICK_ACTION_CHECKLIST.md) - Quick deployment steps
+- [PROFILE_PICTURE_FLOW_DIAGRAM.md](PROFILE_PICTURE_FLOW_DIAGRAM.md) - Visual flow diagram
+- [PROFILE_PICTURE_FIX_SUMMARY.md](PROFILE_PICTURE_FIX_SUMMARY.md) - Bug analysis and solution
+- [PROFILE_PICTURE_DEPLOYMENT.md](PROFILE_PICTURE_DEPLOYMENT.md) - Complete deployment guide
+- [S3_PROFILE_PICTURES.md](S3_PROFILE_PICTURES.md) - Technical implementation details
+- [PROFILE_PICTURE_SECURITY_AUDIT.md](PROFILE_PICTURE_SECURITY_AUDIT.md) - Security audit report
+- [SECURITY_FIXES_APPLIED.md](SECURITY_FIXES_APPLIED.md) - Security fixes documentation
+- [CONTEXT_TRANSFER_COMPLETE.md](CONTEXT_TRANSFER_COMPLETE.md) - Full context summary
+
 ### Deployment & Infrastructure
 - [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) - Pre-deployment checklist
 - [READY_TO_DEPLOY.md](READY_TO_DEPLOY.md) - Deployment readiness

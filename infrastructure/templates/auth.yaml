@@ -75,6 +75,7 @@ Resources:
           Mutable: true
         - Name: picture
           AttributeDataType: String
+          Required: false  # Make optional to avoid null errors
           Mutable: true
       
       # Email verification message
@@ -123,12 +124,12 @@ Resources:
         - email_verified
         - updated_at
         - picture
+        - profile
       
       WriteAttributes:
-        - email
         - name
         - updated_at
-        - picture
+        - profile
   
   # User Pool Domain (for hosted UI - optional)
   UserPoolDomain:

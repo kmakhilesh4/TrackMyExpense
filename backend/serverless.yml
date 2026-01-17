@@ -166,6 +166,45 @@ functions:
           method: delete
           cors: true
 
+  uploadProfilePicture:
+    handler: src/functions/profile.upload
+    events:
+      - http:
+          path: /profile/picture
+          method: post
+          cors:
+            origin: 'https://myexpenses.online,https://www.myexpenses.online'
+            headers:
+              - Content-Type
+              - Authorization
+            allowCredentials: true
+
+  deleteProfilePicture:
+    handler: src/functions/profile.deleteProfilePicture
+    events:
+      - http:
+          path: /profile/picture
+          method: delete
+          cors:
+            origin: 'https://myexpenses.online,https://www.myexpenses.online'
+            headers:
+              - Content-Type
+              - Authorization
+            allowCredentials: true
+
+  getProfilePictureUrl:
+    handler: src/functions/profile.getUrl
+    events:
+      - http:
+          path: /profile/picture/url
+          method: get
+          cors:
+            origin: 'https://myexpenses.online,https://www.myexpenses.online'
+            headers:
+              - Content-Type
+              - Authorization
+            allowCredentials: true
+
 plugins:
   - serverless-plugin-typescript
   - serverless-offline

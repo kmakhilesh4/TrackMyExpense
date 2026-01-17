@@ -90,6 +90,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             const { isSignedIn } = await signIn({ username: email, password });
             if (isSignedIn) {
+                // Note: We don't clear profile pictures anymore
+                // Each user has their own picture stored with their user ID
+                
                 await checkUser();
                 toast.success('Login successful!');
                 // Navigation will be handled by the component
@@ -139,6 +142,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
             // Clear all cached data BEFORE signing out
             queryClient.clear();
+            
+            // Note: We don't clear profile pictures anymore
+            // Each user has their own picture stored with their user ID
             
             await signOut();
             setUser(null);

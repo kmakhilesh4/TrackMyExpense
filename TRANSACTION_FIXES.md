@@ -10,6 +10,8 @@
 - Profile picture stored in browser session
 - Works immediately without additional AWS configuration
 - Picture persists during session but resets on logout
+- **NEW**: Added "Remove Photo" button
+- **NEW**: Profile picture displays in top-right navigation avatar
 
 **Future Enhancement:**
 - Set up Cognito Identity Pool for permanent S3 storage
@@ -55,20 +57,37 @@
    - Changed to base64/session storage approach
    - Removed Amplify Storage dependency for now
    - Added temporary solution notice
+   - Added "Remove Photo" button
+   - **Removed "resets on logout" warning message**
 
-2. `frontend/src/pages/Transactions.tsx`
+2. `frontend/src/context/AuthContext.tsx`
+   - **Added profile picture cleanup on logout**
+   - **Added profile picture cleanup on login (prevents cross-user issues)**
+
+3. `frontend/src/components/layout/MainLayout.tsx`
+   - Added profile picture display in top-right avatar
+   - Added session storage listener for real-time updates
+
+4. `frontend/src/pages/Transactions.tsx`
    - Added export functionality
    - Added sort functionality
    - Added sort UI controls
    - Fixed TypeScript warnings
 
-3. `frontend/.env`
+5. `frontend/.env`
    - Changed `VITE_S3_BUCKET_NAME` → `VITE_S3_RECEIPTS_BUCKET`
 
-4. `frontend/.env.prod`
+6. `frontend/.env.prod`
    - Changed `VITE_S3_BUCKET_NAME` → `VITE_S3_RECEIPTS_BUCKET`
 
 ## Features Added
+
+### Profile Picture Management
+- Upload profile picture (max 2MB)
+- **Remove profile picture button**
+- **Display in top-right navigation avatar**
+- **Real-time updates across the app**
+- Session-based storage (temporary)
 
 ### Export to CSV
 ```typescript
@@ -88,9 +107,13 @@
 ## Testing Checklist
 
 - [ ] Profile picture upload works (base64/session storage)
-- [ ] Profile picture displays correctly
-- [ ] Profile picture persists during session
-- [ ] Profile picture resets on logout (expected behavior)
+- [ ] Profile picture displays correctly in Settings
+- [ ] Profile picture displays in top-right navigation avatar
+- [ ] "Remove Photo" button works
+- [ ] **Profile picture clears on logout**
+- [ ] **Profile picture clears when logging into different account**
+- [ ] **No cross-user profile picture contamination**
+- [ ] Profile picture updates in navigation when changed in Settings
 - [ ] Export button downloads CSV file
 - [ ] CSV contains correct transaction data
 - [ ] CSV respects current filters
@@ -129,25 +152,44 @@
 
 ## Version
 - **Branch**: feature/fix-profile-and-transactions
-- **Fixes**: 4 issues
-- **Files Changed**: 4
-- **Lines Added**: ~80
+- **Fixes**: 4 issues + 1 security issue
+- **Enhancements**: 2 features
+- **Files Changed**: 6
+- **Lines Added**: ~110
 
 ## Notes
 
-### Profile Picture - Temporary Solution
-The profile picture feature currently uses browser session storage instead of S3. This means:
+### Profile Picture - localStorage Solution
+The profile picture feature uses browser localStorage instead of S3. This means:
 - ✅ Works immediately without additional AWS setup
 - ✅ No Cognito Identity Pool required
 - ✅ Fast and simple
-- ⚠️ Picture resets on logout
+- ✅ **Persists permanently (even after logout/browser close)**
+- ✅ **Each user has their own picture (stored with user ID)**
+- ✅ **No cross-user contamination**
 - ⚠️ Not shared across devices
+- ⚠️ Not shared across browsers
+
+**How it works:**
+- Profile picture stored in browser's localStorage with user ID
+- Key format: `profilePicture_userId`
+- Persists permanently until manually removed
+- Each user has their own isolated picture
+- Works across logout/login sessions
+
+**Storage:**
+```javascript
+localStorage: {
+  "profilePicture_user123": "data:image/png;base64,...",
+  "profilePicture_user456": "data:image/jpeg;base64,..."
+}
+```
 
 **Future Enhancement:**
-To make profile pictures permanent, we need to:
+To make profile pictures sync across devices:
 1. Create Cognito Identity Pool
 2. Configure IAM roles for authenticated users
 3. Update Amplify configuration with Identity Pool ID
-4. Switch back to S3 upload with proper access levels
+4. Switch to S3 upload with proper access levels
 
 This can be done in a future update when ready to set up Identity Pool.
