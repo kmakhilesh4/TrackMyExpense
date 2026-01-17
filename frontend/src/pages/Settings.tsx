@@ -33,7 +33,6 @@ import GlassCard from '../components/common/GlassCard';
 import { useColorMode } from '../App';
 import { useAuth } from '../context/AuthContext';
 import { fetchUserAttributes, updateUserAttributes, updatePassword } from 'aws-amplify/auth';
-import { uploadData, getUrl } from 'aws-amplify/storage';
 import { toast } from 'react-hot-toast';
 
 const Settings = () => {
@@ -63,19 +62,10 @@ const Settings = () => {
             setUserAttributes(attributes);
             setEditName(attributes.name || '');
             
-            // Load profile picture if exists
-            if (attributes.picture) {
-                try {
-                    const result = await getUrl({
-                        key: attributes.picture,
-                        options: {
-                            accessLevel: 'private',
-                        },
-                    });
-                    setProfilePictureUrl(result.url.toString());
-                } catch (error) {
-                    console.error('Failed to load profile picture:', error);
-                }
+            // Load profile picture from session storage (temporary solution)
+            const savedPicture = sessionStorage.getItem('profilePicture');
+            if (savedPicture) {
+                setProfilePictureUrl(savedPicture);
             }
         } catch (error) {
             console.error('Failed to fetch user attributes:', error);
@@ -95,39 +85,29 @@ const Settings = () => {
             return;
         }
 
-        // Validate file size (max 5MB)
-        if (file.size > 5 * 1024 * 1024) {
-            toast.error('Image size should be less than 5MB');
+        // Validate file size (max 2MB for base64)
+        if (file.size > 2 * 1024 * 1024) {
+            toast.error('Image size should be less than 2MB');
             return;
         }
 
         setUploading(true);
         try {
-            const fileName = `profile-pictures/${user?.userId || 'user'}-${Date.now()}.${file.name.split('.').pop()}`;
-            
-            // Upload to S3
-            await uploadData({
-                key: fileName,
-                data: file,
-                options: {
-                    accessLevel: 'private',
-                    contentType: file.type,
-                },
-            }).result;
-
-            // Update user attribute
-            await updateUserAttributes({
-                userAttributes: {
-                    picture: fileName,
-                },
-            });
-
-            // Reload attributes
-            await loadUserAttributes();
-            toast.success('Profile picture updated successfully!');
+            // Convert image to base64 (temporary solution)
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64String = reader.result as string;
+                
+                // Store in session storage
+                sessionStorage.setItem('profilePicture', base64String);
+                setProfilePictureUrl(base64String);
+                
+                toast.success('Profile picture updated! (Note: Will reset on logout)');
+            };
+            reader.readAsDataURL(file);
         } catch (error: any) {
-            console.error('Failed to upload profile picture:', error);
-            toast.error(error.message || 'Failed to upload profile picture');
+            console.error('Failed to process profile picture:', error);
+            toast.error(error.message || 'Failed to process profile picture');
         } finally {
             setUploading(false);
         }
