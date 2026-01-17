@@ -718,13 +718,56 @@ npm run lint          # ESLint
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please read [CONTRIBUTING.md](docs/CONTRIBUTING.md) for details.
+We welcome contributions! Please follow our branching strategy and coding guidelines.
+
+### Quick Start
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+2. Create your feature branch from `develop`:
+   ```bash
+   git checkout develop
+   git checkout -b feature/amazing-feature
+   ```
+3. Commit your changes using conventional commits:
+   ```bash
+   git commit -m "feat: add amazing feature"
+   ```
+4. Push to your fork:
+   ```bash
+   git push origin feature/amazing-feature
+   ```
+5. Open a Pull Request to `develop` branch
+
+### Documentation
+
+- **Branching Strategy**: See [BRANCHING_STRATEGY.md](BRANCHING_STRATEGY.md)
+- **Quick Reference**: See [GIT_QUICK_REFERENCE.md](GIT_QUICK_REFERENCE.md)
+- **Contributing Guide**: See [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md)
+- **Migration Guide**: See [MIGRATE_TO_BRANCHING.md](MIGRATE_TO_BRANCHING.md)
+
+### Commit Convention
+
+We follow [Conventional Commits](https://www.conventionalcommits.org/):
+
+```
+feat(scope): add new feature
+fix(scope): fix bug
+docs(scope): update documentation
+style(scope): format code
+refactor(scope): refactor code
+test(scope): add tests
+chore(scope): update dependencies
+```
+
+### Branch Structure
+
+- `main` - Production branch (protected)
+- `develop` - Development branch (default)
+- `feature/*` - Feature branches
+- `hotfix/*` - Hotfix branches
+- `release/*` - Release branches
+
+For detailed workflow, see [BRANCHING_STRATEGY.md](BRANCHING_STRATEGY.md).
 
 ---
 
