@@ -41,6 +41,7 @@ import {
     Download as DownloadIcon,
     Delete as DeleteIcon,
     Close as CloseIcon,
+    SwapVert as SwapVertIcon,
 } from '@mui/icons-material';
 import GlassCard from '../components/common/GlassCard';
 import AddTransactionDialog from '../components/common/AddTransactionDialog';
@@ -72,6 +73,8 @@ const Transactions = () => {
     const [filterCategory, setFilterCategory] = useState('');
     const [filterType, setFilterType] = useState('');
     const [showFilters, setShowFilters] = useState(false);
+    const [sortBy, setSortBy] = useState<'date' | 'amount'>('date');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
     
     const { transactions, isLoading: txLoading, deleteTransaction } = useTransactions();
     const { categories } = useCategories();
@@ -100,16 +103,27 @@ const Transactions = () => {
         }, {} as Record<string, any>);
     }, [accounts]);
 
-    // Filter transactions
+    // Filter and sort transactions
     const filteredTransactions = useMemo(() => {
-        return transactions.filter(tx => {
+        const filtered = transactions.filter(tx => {
             const matchesSearch = tx.description.toLowerCase().includes(searchTerm.toLowerCase());
             const matchesAccount = !filterAccount || tx.accountId === filterAccount;
             const matchesCategory = !filterCategory || tx.categoryId === filterCategory;
             const matchesType = !filterType || tx.type === filterType;
             return matchesSearch && matchesAccount && matchesCategory && matchesType;
         });
-    }, [transactions, searchTerm, filterAccount, filterCategory, filterType]);
+
+        // Sort transactions
+        return filtered.sort((a, b) => {
+            let comparison = 0;
+            if (sortBy === 'date') {
+                comparison = new Date(a.transactionDate).getTime() - new Date(b.transactionDate).getTime();
+            } else if (sortBy === 'amount') {
+                comparison = a.amount - b.amount;
+            }
+            return sortOrder === 'asc' ? comparison : -comparison;
+        });
+    }, [transactions, searchTerm, filterAccount, filterCategory, filterType, sortBy, sortOrder]);
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, tx: any) => {
         setAnchorEl(event.currentTarget);
@@ -140,6 +154,39 @@ const Transactions = () => {
         setSearchTerm('');
     };
 
+    const handleExport = () => {
+        // Convert transactions to CSV
+        const headers = ['Date', 'Description', 'Category', 'Account', 'Type', 'Amount'];
+        const csvData = filteredTransactions.map(tx => {
+            const category = categoryMap[tx.categoryId];
+            const account = accountMap[tx.accountId];
+            return [
+                new Date(tx.transactionDate).toLocaleDateString(),
+                tx.description,
+                category?.name || tx.categoryId,
+                account?.accountName || tx.accountId,
+                tx.type,
+                tx.amount.toFixed(2)
+            ];
+        });
+
+        const csvContent = [
+            headers.join(','),
+            ...csvData.map(row => row.map(cell => `"${cell}"`).join(','))
+        ].join('\n');
+
+        // Download CSV
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `transactions_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     // Show loading only for transactions, not categories
     if (txLoading) {
         return (
@@ -164,6 +211,8 @@ const Transactions = () => {
                     <Button
                         variant="outlined"
                         startIcon={<DownloadIcon />}
+                        onClick={handleExport}
+                        disabled={filteredTransactions.length === 0}
                         sx={{ px: 3, py: 1.2, borderRadius: 2 }}
                     >
                         Export
@@ -209,6 +258,27 @@ const Transactions = () => {
                     >
                         Filter
                     </Button>
+                    <FormControl size="small" sx={{ minWidth: 120 }}>
+                        <InputLabel>Sort By</InputLabel>
+                        <Select
+                            value={sortBy}
+                            label="Sort By"
+                            onChange={(e) => setSortBy(e.target.value as 'date' | 'amount')}
+                            sx={{ borderRadius: 2 }}
+                        >
+                            <MenuItem value="date">Date</MenuItem>
+                            <MenuItem value="amount">Amount</MenuItem>
+                        </Select>
+                    </FormControl>
+                    <IconButton
+                        onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                        sx={{
+                            bgcolor: 'rgba(148, 163, 184, 0.1)',
+                            '&:hover': { bgcolor: 'rgba(148, 163, 184, 0.2)' }
+                        }}
+                    >
+                        <SwapVertIcon />
+                    </IconButton>
                     {(filterAccount || filterCategory || filterType || searchTerm) && (
                         <Button
                             variant="text"
