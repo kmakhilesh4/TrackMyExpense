@@ -38,7 +38,8 @@ const Login = () => {
         e.preventDefault();
         setIsLoading(true);
         try {
-            await login(email, password);
+            // Normalize email to lowercase for case-insensitive login
+            await login(email.toLowerCase().trim(), password);
             // Navigation handled by useEffect
         } catch (error) {
             // Error is handled in context

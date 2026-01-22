@@ -37,7 +37,10 @@ const Signup = () => {
         e.preventDefault();
         setIsLoading(true);
         try {
-            await register(email, password, name);
+            // Normalize email to lowercase for case-insensitive registration
+            const normalizedEmail = email.toLowerCase().trim();
+            await register(normalizedEmail, password, name);
+            setEmail(normalizedEmail); // Update state with normalized email for verification
             setIsVerifying(true);
         } catch (error) {
             // Error is handled in context
@@ -50,7 +53,8 @@ const Signup = () => {
         e.preventDefault();
         setIsLoading(true);
         try {
-            await verify(email, verificationCode);
+            // Email is already normalized from handleSignup
+            await verify(email.toLowerCase().trim(), verificationCode);
             navigate('/login');
         } catch (error) {
             // Error is handled in context
